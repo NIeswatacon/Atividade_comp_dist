@@ -11,15 +11,15 @@ from modelo import analitica, simular
 
 def main():
     parser = argparse.ArgumentParser(description='Compara fórmula binomial e simulação.')
-    parser.add_argument('--n', nargs='+', type=int, default=list(range(2, 22, 2)))
-    parser.add_argument('--p', nargs='+', type=float, default=[0.8, 0.9, 0.95, 0.99])
+    parser.add_argument('--n', nargs='+', type=int, default=[1, 5, 10, 20])
+    parser.add_argument('--p', nargs='+', type=float, default=[0.3, 0.3, 0.8, 0.95])
     parser.add_argument('--rodadas', type=int, default=100_000)
     parser.add_argument('--semente', type=int, help='Omitir gera uma nova sequência a cada execução.')
     parser.add_argument('--saida', type=Path, default=Path('resultados'))
     parser.add_argument('--sem-graficos', action='store_true')
     args = parser.parse_args()
-    if any(n < 2 or n % 2 for n in args.n):
-        parser.error('--n deve conter inteiros positivos pares, para comparar k=n/2')
+    if any(n < 1 for n in args.n):
+        parser.error('--n deve conter inteiros positivos (n >= 1)')
     if any(not 0 <= p <= 1 for p in args.p) or args.rodadas <= 0:
         parser.error('Use probabilidades entre 0 e 1 e rodadas positivas')
     if args.semente is not None and args.semente < 0:
@@ -35,8 +35,9 @@ def main():
     print(f'Semente: {semente}; rodadas por combinação: {args.rodadas}')
     print(' n    p    caso       analítica experimental erro absoluto')
     for n in args.n:
+        k_meio = max(1, round(n/2))  # Para n ímpar, arredonda (empates vão para o par mais próximo).
         for p in args.p:
-            for caso, k in [('k=1', 1), ('k=n/2', n//2), ('k=n', n)]:
+            for caso, k in [('k=1', 1), ('k=n/2', k_meio), ('k=n', n)]:
                 a = analitica(n, k, p)
                 e = simular(n, k, p, args.rodadas, rng)
                 resultados.append(dict(n=n, k=k, p=p, caso=caso, rodadas=args.rodadas,
